@@ -109,28 +109,25 @@ export default class InfiniteScrollView extends React.Component {
       this._distanceFromEnd(event) < this.props.distanceToLoadMore;
   }
 
-  async _loadMoreAsync() {
+  _loadMoreAsync() {
     if (this.state.isLoading && __DEV__) {
       throw new Error('_loadMoreAsync called while isLoading is true');
     }
-
-    try {
-      this.setState({isDisplayingError: false, isLoading: true});
-      await this.props.onLoadMoreAsync();
-    } catch (e) {
-      if (this.props.onLoadError) {
-        this.props.onLoadError(e);
-      }
-      this.setState({isDisplayingError: true});
-    } finally {
-      this.setState({isLoading: false});
-    }
+    this.setState({isDisplayingError: false, isLoading: true});
+    return this.props.onLoadMoreAsync()
+      .catch(e => {
+        if (this.props.onLoadError) {
+          this.props.onLoadError(e);
+        }
+        this.setState({isDisplayingError: true});
+      })
+      .then(() => this.setState({isLoading: false}));
   }
 
   _distanceFromEnd(event): number {
     let {
       contentSize,
-      contentInset,
+      // contentInset, Missing in react-native-web
       contentOffset,
       layoutMeasurement,
     } = event.nativeEvent;
@@ -141,12 +138,12 @@ export default class InfiniteScrollView extends React.Component {
     let viewportLength;
     if (this.props.horizontal) {
       contentLength = contentSize.width;
-      trailingInset = contentInset.right;
+      trailingInset = 0;
       scrollOffset = contentOffset.x;
       viewportLength = layoutMeasurement.width;
     } else {
       contentLength = contentSize.height;
-      trailingInset = contentInset.bottom;
+      trailingInset = 0;
       scrollOffset = contentOffset.y;
       viewportLength = layoutMeasurement.height;
     }
